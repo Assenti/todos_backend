@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -47,6 +49,16 @@ func getTodo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&Todo{})
 }
 
+func createTodo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var todo Todo
+	_ = json.NewDecoder(r.Body).Decode(&todo)
+	// Random ID generating
+	todo.ID = strconv.Itoa(rand.Intn(1000000))
+	todos = append(todos, todo)
+	json.NewEncoder(w).Encode(todo)
+}
+
 func main() {
 	r := mux.NewRouter()
 
@@ -55,7 +67,7 @@ func main() {
 
 	r.HandleFunc("/api/todos", getTodos).Methods("GET")
 	r.HandleFunc("/api/todo/{id}", getTodo).Methods("GET")
-	// r.HandleFunc("/api/todos", createTodos).Methods("POST")
+	r.HandleFunc("/api/todos", createTodo).Methods("POST")
 	// r.HandleFunc("/api/todos/{id}", updateTodo).Methods("PUT")
 	// r.HandleFunc("/api/todos/{id}", deleteTodo).Methods("DELETE")
 
