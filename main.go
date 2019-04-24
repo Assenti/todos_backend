@@ -59,6 +59,36 @@ func createTodo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(todo)
 }
 
+func updateTodo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+
+	for index, item := range todos {
+		if item.ID == params["id"] {
+			todos = append(todos[:index], todos[index+1:]...)
+			var todo Todo
+			_ = json.NewDecoder(r.Body).Decode(&todo)
+			todo.ID = params["id"]
+			todos = append(todos, todo)
+			json.NewEncoder(w).Encode(todo)
+		}
+	}
+	json.NewEncoder(w).Encode(todos)
+}
+
+func deleteTodo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+
+	for index, item := range todos {
+		if item.ID == params["id"] {
+			todos = append(todos[:index], todos[index+1:]...)
+			break
+		}
+	}
+	json.NewEncoder(w).Encode(todos)
+}
+
 func main() {
 	r := mux.NewRouter()
 
@@ -68,8 +98,8 @@ func main() {
 	r.HandleFunc("/api/todos", getTodos).Methods("GET")
 	r.HandleFunc("/api/todo/{id}", getTodo).Methods("GET")
 	r.HandleFunc("/api/todos", createTodo).Methods("POST")
-	// r.HandleFunc("/api/todos/{id}", updateTodo).Methods("PUT")
-	// r.HandleFunc("/api/todos/{id}", deleteTodo).Methods("DELETE")
+	r.HandleFunc("/api/todos/{id}", updateTodo).Methods("PUT")
+	r.HandleFunc("/api/todos/{id}", deleteTodo).Methods("DELETE")
 
 	fmt.Println("Server started...")
 	log.Fatal(http.ListenAndServe(":3000", r))
