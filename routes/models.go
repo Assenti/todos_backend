@@ -8,7 +8,7 @@ import (
 )
 
 const mysqlDbURI = "PgQXfyC4AD:CV3B9cSf2k@tcp(remotemysql.com:3306)/PgQXfyC4AD?parseTime=true"
-const port = "3000"
+const port = "3001"
 
 // User model
 type User struct {
