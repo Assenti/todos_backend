@@ -12,7 +12,7 @@ func greeting(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello from Todos REST API")
 }
 
-// HandleRequests
+// HandleRequests function
 func HandleRequests() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/api", greeting).Methods("GET")
@@ -28,5 +28,5 @@ func HandleRequests() {
 	router.HandleFunc("/api/users", createUser).Methods("POST")
 
 	fmt.Println("Server started...")
-	log.Fatal(http.ListenAndServe(":3000", router))
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }

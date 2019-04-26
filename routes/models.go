@@ -1,6 +1,7 @@
 package routes
 
 const mysqlDbURI = "PgQXfyC4AD:CV3B9cSf2k@tcp(remotemysql.com:3306)/PgQXfyC4AD"
+const port = "3000"
 
 // Todo model
 type Todo struct {
