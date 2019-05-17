@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Assenti/restapi/controllers"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
 	"github.com/kataras/iris/middleware/recover"
@@ -18,20 +19,28 @@ func main() {
 		ctx.HTML("Server successfully started")
 	})
 
-	// Todos API
-	app.Get("/api/todo", controllers.GetSingleTodo)
-	app.Get("/api/usertodos", controllers.GetUserTodos)
-	app.Get("/api/todocompletion", controllers.ToggleTodoCompletion)
-	app.Get("/api/todoimportance", controllers.ToggleTodoImportance)
-	app.Get("/api/todos", controllers.GetTodos)
-	app.Post("/api/todos", controllers.CreateTodo)
-	app.Put("/api/todos", controllers.UpdateTodo)
+	crs := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowCredentials: true,
+	})
 
-	// User API
-	app.Post("/api/users", controllers.CreateUser)
-	app.Put("/api/users", controllers.UpdateUser)
-	app.Get("/api/users", controllers.GetUsersList)
-	app.Post("/api/login", controllers.Login)
+	api := app.Party("/api", crs).AllowMethods(iris.MethodOptions)
+	{
+		// Todos API
+		api.Get("/todo", controllers.GetSingleTodo)
+		api.Get("/usertodos", controllers.GetUserTodos)
+		api.Get("/todocompletion", controllers.ToggleTodoCompletion)
+		api.Get("/todoimportance", controllers.ToggleTodoImportance)
+		api.Get("/todos", controllers.GetTodos)
+		api.Post("/todos", controllers.CreateTodo)
+		api.Put("/todos", controllers.UpdateTodo)
+
+		// User API
+		api.Post("/users", controllers.CreateUser)
+		api.Put("/users", controllers.UpdateUser)
+		api.Get("/users", controllers.GetUsersList)
+		api.Post("/login", controllers.Login)
+	}
 
 	app.Run(iris.Addr(":3000"))
 }
