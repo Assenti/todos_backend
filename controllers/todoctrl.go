@@ -92,7 +92,10 @@ func CreateTodo(ctx iris.Context) {
 	defer db.Close()
 
 	db.Create(&Todo{Value: todo.Value, UserID: todo.UserID})
-	ctx.JSON(iris.Map{"msg": "Todo successfully created."})
+
+	var newTodo Todo
+	db.Where("user_id = ?", todo.UserID).Last(&newTodo)
+	ctx.JSON(iris.Map{"todo": newTodo})
 }
 
 // UpdateTodo method
@@ -119,6 +122,22 @@ func UpdateTodo(ctx iris.Context) {
 	var updatedTodo Todo
 	db.Where("id = ?", todo.ID).Last(&updatedTodo)
 	ctx.JSON(iris.Map{"todo": updatedTodo})
+}
+
+// DeleteTodo method
+func DeleteTodo(ctx iris.Context) {
+	id := ctx.URLParam("id")
+
+	db, dbErr := gorm.Open("mysql", mysqlDbURI)
+
+	if dbErr != nil {
+		fmt.Println(dbErr.Error())
+		panic("Failed to connect to database")
+	}
+	defer db.Close()
+
+	db.Where("id = ?", id).Delete(&Todo{})
+	ctx.JSON(iris.Map{"msg": "Todo successfully deleted."})
 }
 
 // ToggleTodoCompletion method

@@ -21,6 +21,8 @@ func main() {
 
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 	})
 
@@ -34,6 +36,7 @@ func main() {
 		api.Get("/todos", controllers.GetTodos)
 		api.Post("/todos", controllers.CreateTodo)
 		api.Put("/todos", controllers.UpdateTodo)
+		api.Delete("/todos", controllers.DeleteTodo)
 
 		// User API
 		api.Post("/users", controllers.CreateUser)
