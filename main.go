@@ -43,6 +43,9 @@ func main() {
 		api.Put("/users", controllers.UpdateUser)
 		api.Get("/users", controllers.GetUsersList)
 		api.Post("/login", controllers.Login)
+		api.Get("/restorepassword", controllers.RestorePassword)
+		api.Post("/changepassword", controllers.ChangePassword)
+		api.Post("/checkpassword", controllers.CheckPassword)
 	}
 
 	app.Run(iris.Addr(":3000"))

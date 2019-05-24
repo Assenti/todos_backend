@@ -2,10 +2,12 @@ package controllers
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/kataras/iris"
+	"github.com/sethvargo/go-password/password"
 	"gopkg.in/dgrijalva/jwt-go.v3"
 	"gopkg.in/gomail.v2"
 )
@@ -33,7 +35,7 @@ func CreateUser(ctx iris.Context) {
 
 	err := ctx.ReadJSON(&user)
 	if err != nil || (user.Firstname == "" && user.Lastname == "" && user.Email == "" && user.Password == "") {
-		ctx.StatusCode(400)
+		ctx.StatusCode(iris.StatusBadRequest)
 		ctx.JSON(iris.Map{"msg": "Firstname, Lastname, Email and Password must be provided."})
 		return
 	}
@@ -49,7 +51,7 @@ func CreateUser(ctx iris.Context) {
 	db.Create(&User{Firstname: user.Firstname, Lastname: user.Lastname, Email: user.Email, Password: user.Password})
 
 	// Configure the email message
-	htmlBody := fmt.Sprintf("<h3>Hello, %s %s, you are successfully registered on Personal Planner web app.</h3>", user.Firstname, user.Lastname)
+	htmlBody := fmt.Sprintf("<h4>Hello, %s %s, you are successfully registered on Personal Planner web app.</h4>", user.Firstname, user.Lastname)
 	m := gomail.NewMessage()
 	m.SetHeader("From", mailUser)
 	m.SetHeader("To", user.Email)
@@ -72,7 +74,7 @@ func UpdateUser(ctx iris.Context) {
 
 	err := ctx.ReadJSON(&user)
 	if err != nil || (user.Firstname == "" && user.Lastname == "") {
-		ctx.StatusCode(400)
+		ctx.StatusCode(iris.StatusBadRequest)
 		ctx.JSON(iris.Map{"msg": "Firstname, Lastname must be provided."})
 		return
 	}
@@ -164,4 +166,126 @@ func Login(ctx iris.Context) {
 		ctx.StatusCode(iris.StatusBadRequest)
 		ctx.JSON(iris.Map{"msg": "Invalid Email or Password."})
 	}
+}
+
+// RestorePassword method
+func RestorePassword(ctx iris.Context) {
+	email := ctx.URLParam("email")
+
+	if email == "" {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.JSON(iris.Map{"message": "Email must be provided."})
+		return
+	}
+
+	db, dbErr := gorm.Open("mysql", mysqlDbURI)
+
+	if dbErr != nil {
+		fmt.Println(dbErr.Error())
+		panic("Failed to connect to database")
+	}
+	defer db.Close()
+
+	var foundedUser User
+	db.Where(&User{Email: email}).First(&foundedUser)
+
+	if foundedUser.Email == "" {
+		ctx.StatusCode(iris.StatusNotFound)
+		ctx.JSON(iris.Map{"message": "There is no user with same Email."})
+		return
+	}
+
+	res, err := password.Generate(12, 2, 2, true, false)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db.Model(&foundedUser).Where(&User{ID: foundedUser.ID}).Updates(User{Password: res})
+
+	// Configure the email message
+	htmlBody := fmt.Sprintf("<h4>You sent password restoring request. Generated new password: %s. Change it from your cabinet in app.</h4>", res)
+	m := gomail.NewMessage()
+	m.SetHeader("From", mailUser)
+	m.SetHeader("To", email)
+	m.SetHeader("Subject", "Password Restore")
+	m.SetBody("text/html", htmlBody)
+
+	d := gomail.NewDialer(mailHost, mailPort, mailUser, mailPassword)
+
+	// Send the email
+	if err := d.DialAndSend(m); err != nil {
+		panic(err)
+	}
+	ctx.JSON(iris.Map{"message": "Password was sent to Email."})
+}
+
+// ChangePassword method
+func ChangePassword(ctx iris.Context) {
+	var user User
+
+	err := ctx.ReadJSON(&user)
+	if err != nil || user.Password == "" {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.JSON(iris.Map{"msg": "Password must be provided."})
+		return
+	}
+
+	db, dbErr := gorm.Open("mysql", mysqlDbURI)
+
+	if dbErr != nil {
+		fmt.Println(dbErr.Error())
+		panic("Failed to connect to database")
+	}
+	defer db.Close()
+
+	var foundedUser User
+	db.Where(&User{ID: user.ID}).First(&foundedUser)
+
+	db.Model(&foundedUser).Where(&User{ID: foundedUser.ID}).Updates(User{Password: user.Password})
+
+	// Configure the email message
+	htmlBody := fmt.Sprintf("<p>Your password successfully changed.</p>")
+	m := gomail.NewMessage()
+	m.SetHeader("From", mailUser)
+	m.SetHeader("To", user.Email)
+	m.SetHeader("Subject", "Password Change")
+	m.SetBody("text/html", htmlBody)
+
+	d := gomail.NewDialer(mailHost, mailPort, mailUser, mailPassword)
+
+	// Send the email
+	if err := d.DialAndSend(m); err != nil {
+		panic(err)
+	}
+	ctx.JSON(iris.Map{"message": "Password successfully changed."})
+}
+
+// CheckPassword method
+func CheckPassword(ctx iris.Context) {
+	var user User
+
+	err := ctx.ReadJSON(&user)
+	if err != nil && (user.Password == "") {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.JSON(iris.Map{"message": "Password must be provided."})
+		return
+	}
+
+	db, dbErr := gorm.Open("mysql", mysqlDbURI)
+
+	if dbErr != nil {
+		fmt.Println(dbErr.Error())
+		panic("Failed to connect to database")
+	}
+	defer db.Close()
+
+	var foundedUser User
+	db.Where(&User{ID: user.ID}).First(&foundedUser)
+
+	if foundedUser.Password != user.Password {
+		ctx.StatusCode(iris.StatusNotFound)
+		ctx.JSON(iris.Map{"message": "Invalid current Password."})
+		return
+	}
+	ctx.StatusCode(iris.StatusOK)
 }
