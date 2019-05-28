@@ -12,16 +12,6 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-// User model
-type User struct {
-	ID        uint      `gorm:"primary_key"`
-	CreatedAt time.Time `gorm:"default: CURRENT_TIMESTAMP"`
-	Firstname string    `gorm:"type:varchar(100)"`
-	Lastname  string    `gorm:"type:varchar(100)"`
-	Email     string    `gorm:"unique_index"`
-	Password  string    `gorm:"type:varchar(100)"`
-}
-
 const mailHost = "smtp.gmail.com"
 const mailPort = 587
 const mailUser = "testyfy7@gmail.com"

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/kataras/iris"
@@ -12,17 +11,6 @@ const mysqlDbURI = "PgQXfyC4AD:CV3B9cSf2k@tcp(remotemysql.com:3306)/PgQXfyC4AD?p
 
 var db *gorm.DB
 var err error
-
-// Todo Model
-type Todo struct {
-	ID        uint      `gorm:"primary_key"`
-	CreatedAt time.Time `gorm:"default: CURRENT_TIMESTAMP"`
-	UpdatedAt time.Time
-	Value     string
-	Important int8 `gorm:"default: 0"`
-	Completed int8 `gorm:"default: 0"`
-	UserID    uint
-}
 
 // GetTodos method
 func GetTodos(ctx iris.Context) {
