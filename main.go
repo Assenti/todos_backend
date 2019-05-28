@@ -37,6 +37,7 @@ func main() {
 		api.Post("/todos", controllers.CreateTodo)
 		api.Put("/todos", controllers.UpdateTodo)
 		api.Delete("/todos", controllers.DeleteTodo)
+		api.Post("/sendViaEmail", controllers.SendTodosListViaEmail)
 
 		// User API
 		api.Post("/users", controllers.CreateUser)

@@ -1,4 +1,4 @@
-# REST API for Todos web app on Go lang
+# REST API for Personal Planner ver. 2.0 web app (written on Go lang)
 
 > Used technologies: IRIS web framework with MySQL DB (with GORM)
 
@@ -10,32 +10,34 @@ $ go run main.go
 
 ## Methods List
 
-### GET /todo - controllers.GetSingleTodo
+#### GET /todo - controllers.GetSingleTodo
 
-### GET /usertodos - controllers.GetUserTodos
+#### GET /usertodos - controllers.GetUserTodos
 
-### GET /todocompletion - controllers.ToggleTodoCompletion
+#### GET /todocompletion - controllers.ToggleTodoCompletion
 
-### GET /todoimportance - controllers.ToggleTodoImportance
+#### GET /todoimportance - controllers.ToggleTodoImportance
 
-### GET /todos - controllers.GetTodos
+#### GET /todos - controllers.GetTodos
 
-### POST /todos - controllers.CreateTodo
+#### POST /todos - controllers.CreateTodo
 
-### PUT /todos - controllers.UpdateTodo
+#### PUT /todos - controllers.UpdateTodo
 
-### DELETE /todos - controllers.DeleteTodo
+#### DELETE /todos - controllers.DeleteTodo
 
-### POST /users - controllers.CreateUser
+#### POST /sendViaEmail - controllers.SendTodosListViaEmail
 
-### PUT /users - controllers.UpdateUser
+#### POST /users - controllers.CreateUser
 
-### GET /users - controllers.GetUsersList
+#### PUT /users - controllers.UpdateUser
 
-### POST /login - controllers.Login
+#### GET /users - controllers.GetUsersList
 
-### GET /restorepassword - controllers.RestorePassword
+#### POST /login - controllers.Login
 
-### POST /changepassword - controllers.ChangePassword
+#### GET /restorepassword - controllers.RestorePassword
 
-### POST /checkpassword - controllers.CheckPassword
+#### POST /changepassword - controllers.ChangePassword
+
+#### POST /checkpassword - controllers.CheckPassword

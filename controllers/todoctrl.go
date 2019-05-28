@@ -5,6 +5,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/kataras/iris"
+	"gopkg.in/gomail.v2"
 )
 
 const mysqlDbURI = "PgQXfyC4AD:CV3B9cSf2k@tcp(remotemysql.com:3306)/PgQXfyC4AD?parseTime=true"
@@ -69,6 +70,7 @@ func CreateTodo(ctx iris.Context) {
 	if err != nil || todo.Value == "" {
 		ctx.StatusCode(iris.StatusBadRequest)
 		ctx.JSON(iris.Map{"msg": "Value must be provided."})
+		return
 	}
 
 	db, dbErr := gorm.Open("mysql", mysqlDbURI)
@@ -95,6 +97,7 @@ func UpdateTodo(ctx iris.Context) {
 	if err != nil || todo.Value == "" {
 		ctx.StatusCode(iris.StatusBadRequest)
 		ctx.JSON(iris.Map{"msg": "Todo must be provided."})
+		return
 	}
 
 	db, dbErr := gorm.Open("mysql", mysqlDbURI)
@@ -177,4 +180,48 @@ func ToggleTodoImportance(ctx iris.Context) {
 	var updatedTodo Todo
 	db.Where("id = ?", id).Last(&updatedTodo)
 	ctx.JSON(iris.Map{"todo": &updatedTodo})
+}
+
+// SendTodosListViaEmail method
+func SendTodosListViaEmail(ctx iris.Context) {
+	var todos []Todo
+	email := ctx.URLParam("email")
+
+	err := ctx.ReadJSON(&todos)
+
+	if err != nil || len(todos) == 0 {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.JSON(iris.Map{"msg": "Todos list must be provided."})
+		return
+	}
+
+	fmt.Println(len(todos))
+
+	var todosHTML string
+	htmlBody := "<h4>Your todos list:</h4>"
+	footer := "<hr><p style='font-size: 11px'>Message was generated automatically. Please don't reply.</p>"
+
+	for i, todo := range todos {
+		index := i + 1
+		todosHTML += fmt.Sprintf("<div>%d) %s;</div>", index, todo.Value)
+	}
+
+	fmt.Println(todosHTML)
+
+	htmlBody = htmlBody + todosHTML + footer
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", mailUser)
+	m.SetHeader("To", email)
+	m.SetHeader("Subject", "Todos List")
+	m.SetBody("text/html", htmlBody)
+
+	d := gomail.NewDialer(mailHost, mailPort, mailUser, mailPassword)
+
+	// Send the email
+	if err := d.DialAndSend(m); err != nil {
+		panic(err)
+	}
+
+	ctx.StatusCode(iris.StatusOK)
 }
