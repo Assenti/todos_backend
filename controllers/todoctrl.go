@@ -41,7 +41,30 @@ func GetUserTodos(ctx iris.Context) {
 	}
 	defer db.Close()
 
-	db.Where("user_id = ?", id).Find(&todos)
+	db.Where("user_id = ?", id).Order("created_at desc").Find(&todos)
+
+	// const shortDate = "2019-01-01"
+	// start := todos[len(todos)-1].CreatedAt
+	// end := todos[0].CreatedAt
+	// compareStart := todos[len(todos)-1].CreatedAt
+	// var dates []string
+
+	// fmt.Println(start)
+	// fmt.Println(end)
+
+	// for i := 0; i < 1000000; i++ {
+	// 	fmt.Println(i)
+	// 	if IsDateInPeriod(compareStart, end, start) {
+	// 		dates = append(dates, start.String()[0:10])
+	// 		start = start.AddDate(0, 0, 1)
+	// 		i++
+	// 	} else {
+	// 		break
+	// 	}
+	// }
+
+	// dates = Unique(dates)
+
 	ctx.JSON(iris.Map{"todos": todos})
 }
 
