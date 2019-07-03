@@ -1,45 +1,47 @@
-# REST API for Personal Planner ver. 2.0 web app (written on Go lang)
+# REST API for Personal Planner ver. 2.0 web app
 
-> Used technologies: IRIS web framework with MySQL DB (with GORM)
+> Used Stack: Go lang, IRIS web framework, GORM, MySQL DB
+
+## Build app
+```
+$ go build
+```
 
 ## Run app
 ```
 $ go run main.go
 ```
 
-
 ## Methods List
 
-#### GET /todo - controllers.GetSingleTodo
+> GET /todo - controllers.GetSingleTodo
 
-#### GET /usertodos - controllers.GetUserTodos
+> GET /usertodos - controllers.GetUserTodos
 
-#### GET /todocompletion - controllers.ToggleTodoCompletion
+> GET /todocompletion - controllers.ToggleTodoCompletion
 
-#### GET /todoimportance - controllers.ToggleTodoImportance
+> GET /todoimportance - controllers.ToggleTodoImportance
 
-#### GET /todos - controllers.GetTodos
+> GET /todos - controllers.GetTodos
 
-#### POST /todos - controllers.CreateTodo
+> POST /todos - controllers.CreateTodo
 
-#### PUT /todos - controllers.UpdateTodo
+> PUT /todos - controllers.UpdateTodo
 
-#### DELETE /todos - controllers.DeleteTodo
+> DELETE /todos - controllers.DeleteTodo
 
-#### POST /sendViaEmail - controllers.SendTodosListViaEmail
+> POST /sendViaEmail - controllers.SendTodosListViaEmail
 
-#### POST /users - controllers.CreateUser
+> POST /users - controllers.CreateUser
 
-#### PUT /users - controllers.UpdateUser
+> PUT /users - controllers.UpdateUser
 
-#### GET /users - controllers.GetUsersList
+> GET /users - controllers.GetUsersList
 
-#### POST /login - controllers.Login
+> POST /login - controllers.Login
 
-#### GET /restorepassword - controllers.RestorePassword
+> GET /restorepassword - controllers.RestorePassword
 
-#### POST /changepassword - controllers.ChangePassword
+> POST /changepassword - controllers.ChangePassword
 
-#### POST /checkpassword - controllers.CheckPassword
-
-#### 
+> POST /checkpassword - controllers.CheckPassword 

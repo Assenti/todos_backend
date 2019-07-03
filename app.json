@@ -1,0 +1,14 @@
+{
+    "name": "Personal Planner 2.0 RESTful API",
+    "description": "Personal Planner RESTful API",
+    "repository": "https://github.com/Assenti/todos_backend",
+    "keywords": [
+      "go",
+      "restapi"
+    ],
+    "scripts": {
+      "dokku": {
+        "predeploy": "go build"
+      }
+    }
+}

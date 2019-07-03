@@ -26,6 +26,9 @@ func main() {
 		AllowCredentials: true,
 	})
 
+	// Rendering static files
+	// app.StaticWeb("/", "./dist")
+
 	api := app.Party("/api", crs).AllowMethods(iris.MethodOptions)
 	{
 		// Todos API
