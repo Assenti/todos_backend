@@ -1,0 +1,8 @@
+{
+    "name": "Personal Planner 2.0 REST API",
+    "description": "Personal Planner web application",
+    "repository": "https://github.com/Assenti/todos_backend.git",
+    "keywords": [
+      "go"
+    ]
+}
