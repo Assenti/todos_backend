@@ -12,6 +12,23 @@ type User struct {
 	Password  string    `gorm:"type:varchar(100)"`
 }
 
+// UserSubmit model
+type UserSubmit struct {
+	Email    string `gorm:"unique_index"`
+	Password string `gorm:"type:varchar(100)"`
+	Remember bool
+}
+
+// UserInfo model to pass to frontend
+type UserInfo struct {
+	ID        uint      `gorm:"primary_key" json:"id"`
+	CreatedAt time.Time `gorm:"default: CURRENT_TIMESTAMP" json:"createdAt"`
+	Firstname string    `gorm:"type:varchar(100)" json:"firstname"`
+	Lastname  string    `gorm:"type:varchar(100)" json:"lastname"`
+	Email     string    `gorm:"unique_index" json:"email"`
+	Token     string    `json:"token"`
+}
+
 // Todo Model
 type Todo struct {
 	ID        uint      `gorm:"primary_key"`

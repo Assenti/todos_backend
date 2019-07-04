@@ -15,14 +15,10 @@ func main() {
 	app.Use(recover.New())
 	app.Use(logger.New())
 
-	app.Get("/", func(ctx iris.Context) {
-		ctx.HTML("Server successfully started")
-	})
-
 	crs := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   []string{"http://localhost:8080", "https://planner-2.herokuapp.com"},
 		AllowedMethods:   []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"},
-		AllowedHeaders:   []string{"*"},
+		AllowedHeaders:   []string{"Origin", "Accept", "Content-Type", "X-Requested-With"},
 		AllowCredentials: true,
 	})
 

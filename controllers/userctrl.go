@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -101,7 +103,7 @@ func GetUsersList(ctx iris.Context) {
 
 // Login method
 func Login(ctx iris.Context) {
-	var user User
+	var user UserSubmit
 
 	err := ctx.ReadJSON(&user)
 	if err != nil || (user.Email == "" && user.Password == "") {
@@ -128,18 +130,19 @@ func Login(ctx iris.Context) {
 		// Create a struct that will be encoded to a JWT.
 		// We add jwt.StandardClaims as an embedded type, to provide fields like expiry time
 		type Claims struct {
-			Firstname string `json:"firstname"`
+			Email string `json:"email"`
 			jwt.StandardClaims
 		}
 
+		var standardClaims jwt.StandardClaims
 		expirationTime := time.Now().Add(sessionTime * time.Minute)
-		// Create the JWT claims, which includes the firstname and expiry time
+		standardClaims.ExpiresAt = expirationTime.Unix()
 		claims := &Claims{
-			Firstname: user.Firstname,
-			StandardClaims: jwt.StandardClaims{
-				// In JWT, the expiry time is expressed as unix milliseconds
-				ExpiresAt: expirationTime.Unix(),
-			},
+			Email: user.Email,
+		}
+
+		if !user.Remember {
+			claims.StandardClaims = standardClaims
 		}
 
 		// Declare the token with the algorithm used for signing, and the claims
@@ -151,7 +154,20 @@ func Login(ctx iris.Context) {
 			ctx.StatusCode(iris.StatusInternalServerError)
 		}
 
-		ctx.JSON(iris.Map{"user": &foundedUser, "token": tokenString})
+		var userInfo UserInfo
+		userInfo.CreatedAt = foundedUser.CreatedAt
+		userInfo.Email = foundedUser.Email
+		userInfo.Firstname = foundedUser.Firstname
+		userInfo.ID = foundedUser.ID
+		userInfo.Lastname = foundedUser.Lastname
+		userInfo.Token = tokenString
+
+		userInfoInString, err := json.Marshal(&userInfo)
+		if err != nil {
+			panic(err)
+		}
+		encodedUserInfo := base64.StdEncoding.EncodeToString(userInfoInString)
+		ctx.JSON(iris.Map{"user": encodedUserInfo})
 	} else {
 		ctx.StatusCode(iris.StatusBadRequest)
 		ctx.JSON(iris.Map{"msg": "Invalid Email or Password."})
