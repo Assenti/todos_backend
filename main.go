@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Assenti/restapi/controllers"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/iris-contrib/middleware/cors"
@@ -10,6 +12,15 @@ import (
 )
 
 func main() {
+	var port string
+	var envPort string
+	envPort = os.Getenv("PORT")
+	if envPort != "" {
+		port = envPort
+	} else {
+		port = "3000"
+	}
+
 	app := iris.Default()
 	app.Logger().SetLevel("debug")
 	app.Use(recover.New())
@@ -48,5 +59,5 @@ func main() {
 		api.Post("/checkpassword", controllers.CheckPassword)
 	}
 
-	app.Run(iris.Addr(":3000"))
+	app.Run(iris.Addr(":" + port))
 }
