@@ -18,7 +18,7 @@ func main() {
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:8080", "https://planner-2.herokuapp.com"},
 		AllowedMethods:   []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"},
-		AllowedHeaders:   []string{"Origin", "Accept", "Content-Type", "X-Requested-With"},
+		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 	})
 
