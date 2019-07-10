@@ -1,6 +1,10 @@
 package controllers
 
-import "time"
+import (
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
+)
 
 // Unique func
 func Unique(slice []string) []string {
@@ -28,4 +32,16 @@ func IsDateInPeriod(start, end, check time.Time) bool {
 
 	return ((checkDay >= startDay && checkYear >= startYear) &&
 		(checkDay <= endDay && checkYear <= endYear))
+}
+
+// HashPassword function
+func HashPassword(nativePassword string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(nativePassword), 14)
+	return string(bytes), err
+}
+
+// IsPasswordMatch function
+func IsPasswordMatch(nativePassword string, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(nativePassword))
+	return err == nil
 }

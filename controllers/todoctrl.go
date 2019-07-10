@@ -2,26 +2,21 @@ package controllers
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
+	"github.com/Assenti/restapi/db"
+	"github.com/Assenti/restapi/models"
 	"github.com/jinzhu/gorm"
 	"github.com/kataras/iris"
 	"gopkg.in/gomail.v2"
 )
 
-const mysqlDbURI = "PgQXfyC4AD:CV3B9cSf2k@tcp(remotemysql.com:3306)/PgQXfyC4AD?parseTime=true"
-
-var db *gorm.DB
-var err error
-
 // GetTodos method
 func GetTodos(ctx iris.Context) {
-	var todos []Todo
+	var todos []models.Todo
 
-	db, err = gorm.Open("mysql", mysqlDbURI)
-	if err != nil {
-		fmt.Println(err.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
 	db.Find(&todos)
@@ -30,40 +25,30 @@ func GetTodos(ctx iris.Context) {
 
 // GetUserTodos method
 func GetUserTodos(ctx iris.Context) {
-	var todos []Todo
+	var todos []models.JoinedTodo
 
 	id := ctx.URLParam("userid")
 
-	db, err = gorm.Open("mysql", mysqlDbURI)
-	if err != nil {
-		fmt.Println(err.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	db.Where("user_id = ?", id).Order("created_at desc").Find(&todos)
-
-	// const shortDate = "2019-01-01"
-	// start := todos[len(todos)-1].CreatedAt
-	// end := todos[0].CreatedAt
-	// compareStart := todos[len(todos)-1].CreatedAt
-	// var dates []string
-
-	// fmt.Println(start)
-	// fmt.Println(end)
-
-	// for i := 0; i < 1000000; i++ {
-	// 	fmt.Println(i)
-	// 	if IsDateInPeriod(compareStart, end, start) {
-	// 		dates = append(dates, start.String()[0:10])
-	// 		start = start.AddDate(0, 0, 1)
-	// 		i++
-	// 	} else {
-	// 		break
-	// 	}
-	// }
-
-	// dates = Unique(dates)
+	db.Table("users").Raw(`SELECT 
+				todos.id, 
+				todos.value, 
+				todos.created_at, 
+				todos.updated_at, 
+				todos.important, 
+				todos.completed, 
+				todos.user_id, 
+				todos.complete_date, 
+				todos.status, 
+				todos.group_id, 
+				todos.performer, 
+				users.firstname, 
+				users.lastname
+				FROM todos
+				LEFT JOIN users ON todos.performer = users.id
+				where user_id = ?`, id).Scan(&todos)
 
 	ctx.JSON(iris.Map{"todos": todos})
 }
@@ -71,13 +56,9 @@ func GetUserTodos(ctx iris.Context) {
 // GetSingleTodo method
 func GetSingleTodo(ctx iris.Context) {
 	id := ctx.URLParam("id")
-	var result Todo
+	var result models.Todo
 
-	db, err = gorm.Open("mysql", mysqlDbURI)
-	if err != nil {
-		fmt.Println(err.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
 	db.Where("id = ?", id).Last(&result)
@@ -86,7 +67,7 @@ func GetSingleTodo(ctx iris.Context) {
 
 // CreateTodo method
 func CreateTodo(ctx iris.Context) {
-	var todo Todo
+	var todo models.Todo
 
 	err := ctx.ReadJSON(&todo)
 
@@ -96,24 +77,19 @@ func CreateTodo(ctx iris.Context) {
 		return
 	}
 
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	db.Create(&Todo{Value: todo.Value, UserID: todo.UserID})
+	db.Create(&models.Todo{Value: todo.Value, UserID: todo.UserID})
 
-	var newTodo Todo
+	var newTodo models.Todo
 	db.Where("user_id = ?", todo.UserID).Last(&newTodo)
 	ctx.JSON(iris.Map{"todo": newTodo})
 }
 
 // UpdateTodo method
 func UpdateTodo(ctx iris.Context) {
-	var todo Todo
+	var todo models.Todo
 
 	err := ctx.ReadJSON(&todo)
 
@@ -123,17 +99,12 @@ func UpdateTodo(ctx iris.Context) {
 		return
 	}
 
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
 	db.Model(&todo).Where("id = ?", todo.ID).Update("value", todo.Value)
 
-	var updatedTodo Todo
+	var updatedTodo models.Todo
 	db.Where("id = ?", todo.ID).Last(&updatedTodo)
 	ctx.JSON(iris.Map{"todo": updatedTodo})
 }
@@ -142,39 +113,31 @@ func UpdateTodo(ctx iris.Context) {
 func DeleteTodo(ctx iris.Context) {
 	id := ctx.URLParam("id")
 
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	db.Where("id = ?", id).Delete(&Todo{})
+	db.Where("id = ?", id).Delete(&models.Todo{})
 	ctx.JSON(iris.Map{"msg": "Todo successfully deleted."})
 }
 
 // ToggleTodoCompletion method
 func ToggleTodoCompletion(ctx iris.Context) {
 	id := ctx.URLParam("id")
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	var todo Todo
+	var todo models.Todo
 	db.Where("id = ?", id).Last(&todo)
 
 	if todo.Completed == 1 {
-		db.Model(&todo).Where("id = ?", id).Update("completed", 0)
+		db.Model(&todo).Where("id = ?", id).Updates(map[string]interface{}{"completed": 0, "complete_date": gorm.Expr("NULL")})
 	} else {
-		db.Model(&todo).Where("id = ?", id).Update("completed", 1)
+		temp := time.Now()
+		current := temp.Format("2006-01-02T15:04:05")
+		db.Model(&todo).Where("id = ?", id).Updates(map[string]interface{}{"completed": 1, "complete_date": current})
 	}
 
-	var updatedTodo Todo
+	var updatedTodo models.Todo
 	db.Where("id = ?", id).Last(&updatedTodo)
 
 	ctx.JSON(iris.Map{"todo": &updatedTodo})
@@ -183,15 +146,10 @@ func ToggleTodoCompletion(ctx iris.Context) {
 // ToggleTodoImportance method
 func ToggleTodoImportance(ctx iris.Context) {
 	id := ctx.URLParam("id")
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	var todo Todo
+	var todo models.Todo
 	db.Where("id = ?", id).Last(&todo)
 
 	if todo.Important == 1 {
@@ -200,14 +158,14 @@ func ToggleTodoImportance(ctx iris.Context) {
 		db.Model(&todo).Where("id = ?", id).Update("important", 1)
 	}
 
-	var updatedTodo Todo
+	var updatedTodo models.Todo
 	db.Where("id = ?", id).Last(&updatedTodo)
 	ctx.JSON(iris.Map{"todo": &updatedTodo})
 }
 
 // SendTodosListViaEmail method
 func SendTodosListViaEmail(ctx iris.Context) {
-	var todos []Todo
+	var todos []models.Todo
 	email := ctx.URLParam("email")
 
 	err := ctx.ReadJSON(&todos)
@@ -217,8 +175,6 @@ func SendTodosListViaEmail(ctx iris.Context) {
 		ctx.JSON(iris.Map{"msg": "Todos list must be provided."})
 		return
 	}
-
-	fmt.Println(len(todos))
 
 	var todosHTML string
 	htmlBody := "<h4>Your todos list:</h4>"
@@ -247,4 +203,24 @@ func SendTodosListViaEmail(ctx iris.Context) {
 	}
 
 	ctx.StatusCode(iris.StatusOK)
+}
+
+// SetTodoPerformer method
+func SetTodoPerformer(ctx iris.Context) {
+	todoID := ctx.URLParam("todoId")
+	userID := ctx.URLParam("userId")
+
+	db := db.Connect()
+	defer db.Close()
+
+	var todo models.Todo
+	db.Where("id = ?", todoID).Last(&todo)
+
+	intUserID, _ := strconv.ParseUint(userID, 10, 64)
+
+	db.Model(&todo).Where("id = ?", todoID).Update("performer", intUserID)
+
+	var updatedTodo models.Todo
+	db.Where("id = ?", todoID).Last(&updatedTodo)
+	ctx.JSON(iris.Map{"todo": &updatedTodo})
 }

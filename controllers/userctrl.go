@@ -7,7 +7,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/jinzhu/gorm"
+	"github.com/Assenti/restapi/db"
+	"github.com/Assenti/restapi/models"
 	"github.com/kataras/iris"
 	"github.com/sethvargo/go-password/password"
 	"gopkg.in/dgrijalva/jwt-go.v3"
@@ -16,14 +17,15 @@ import (
 
 const mailHost = "smtp.gmail.com"
 const mailPort = 587
+const mailSender = "Personal Planner <testyfy7@gmail.com>"
 const mailUser = "testyfy7@gmail.com"
 const mailPassword = "qwgqebnounjwnmfo"
 const jwtSecret = "ju$tTe$t1t"
 const sessionTime = 30
 
-// CreateUser method
+// CreateUser method (New user registration)
 func CreateUser(ctx iris.Context) {
-	var user User
+	var user models.User
 
 	err := ctx.ReadJSON(&user)
 	if err != nil || (user.Firstname == "" && user.Lastname == "" && user.Email == "" && user.Password == "") {
@@ -32,15 +34,12 @@ func CreateUser(ctx iris.Context) {
 		return
 	}
 
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	db.Create(&User{Firstname: user.Firstname, Lastname: user.Lastname, Email: user.Email, Password: user.Password})
+	hash, _ := HashPassword(user.Password)
+
+	db.Create(&models.User{Firstname: user.Firstname, Lastname: user.Lastname, Email: user.Email, Password: hash})
 
 	// Configure the email message
 	htmlBody := fmt.Sprintf("<h4>Hello, %s %s, you are successfully registered on Personal Planner web app.</h4>", user.Firstname, user.Lastname)
@@ -62,7 +61,7 @@ func CreateUser(ctx iris.Context) {
 
 // UpdateUser method
 func UpdateUser(ctx iris.Context) {
-	var user User
+	var user models.User
 
 	err := ctx.ReadJSON(&user)
 	if err != nil || (user.Firstname == "" && user.Lastname == "") {
@@ -71,39 +70,29 @@ func UpdateUser(ctx iris.Context) {
 		return
 	}
 
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	db.Model(&user).Where("id = ?", user.ID).Updates(User{Firstname: user.Firstname, Lastname: user.Lastname})
+	db.Model(&user).Where("id = ?", user.ID).Updates(models.User{Firstname: user.Firstname, Lastname: user.Lastname})
 
-	var updatedUser User
+	var updatedUser models.User
 	db.Where("id = ?", user.ID).Last(&updatedUser)
 	ctx.JSON(iris.Map{"user": updatedUser})
 }
 
 // GetUsersList method
 func GetUsersList(ctx iris.Context) {
-	var users []User
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	var users []models.Performer
+	db := db.Connect()
 	defer db.Close()
 
-	db.Find(&users)
+	db.Table("users").Scan(&users)
 	ctx.JSON(iris.Map{"users": users})
 }
 
 // Login method
 func Login(ctx iris.Context) {
-	var user UserSubmit
+	var user models.UserSubmit
 
 	err := ctx.ReadJSON(&user)
 	if err != nil || (user.Email == "" && user.Password == "") {
@@ -112,18 +101,15 @@ func Login(ctx iris.Context) {
 		return
 	}
 
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	var foundedUser User
-	db.Where(&User{Email: user.Email, Password: user.Password}).First(&foundedUser)
+	var foundedUser models.User
+	db.Where(&models.User{Email: user.Email}).First(&foundedUser)
 
-	if foundedUser.Email == user.Email && foundedUser.Password == user.Password {
+	passMatch := IsPasswordMatch(user.Password, foundedUser.Password)
+
+	if foundedUser.Email == user.Email && passMatch {
 		// Create the JWT key used to create the signature
 		var jwtKey = []byte(jwtSecret)
 
@@ -154,7 +140,7 @@ func Login(ctx iris.Context) {
 			ctx.StatusCode(iris.StatusInternalServerError)
 		}
 
-		var userInfo UserInfo
+		var userInfo models.UserInfo
 		userInfo.CreatedAt = foundedUser.CreatedAt
 		userInfo.Email = foundedUser.Email
 		userInfo.Firstname = foundedUser.Firstname
@@ -184,16 +170,11 @@ func RestorePassword(ctx iris.Context) {
 		return
 	}
 
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	var foundedUser User
-	db.Where(&User{Email: email}).First(&foundedUser)
+	var foundedUser models.User
+	db.Where(&models.User{Email: email}).First(&foundedUser)
 
 	if foundedUser.Email == "" {
 		ctx.StatusCode(iris.StatusNotFound)
@@ -206,7 +187,7 @@ func RestorePassword(ctx iris.Context) {
 		log.Fatal(err)
 	}
 
-	db.Model(&foundedUser).Where(&User{ID: foundedUser.ID}).Updates(User{Password: res})
+	db.Model(&foundedUser).Where(&models.User{ID: foundedUser.ID}).Updates(models.User{Password: res})
 
 	// Configure the email message
 	htmlBody := fmt.Sprintf("<h4>You sent password restoring request. Generated new password: %s. Change it from your cabinet in app.</h4>", res)
@@ -227,7 +208,7 @@ func RestorePassword(ctx iris.Context) {
 
 // ChangePassword method
 func ChangePassword(ctx iris.Context) {
-	var user User
+	var user models.User
 
 	err := ctx.ReadJSON(&user)
 	if err != nil || user.Password == "" {
@@ -236,18 +217,13 @@ func ChangePassword(ctx iris.Context) {
 		return
 	}
 
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	var foundedUser User
-	db.Where(&User{ID: user.ID}).First(&foundedUser)
+	var foundedUser models.User
+	db.Where(&models.User{ID: user.ID}).First(&foundedUser)
 
-	db.Model(&foundedUser).Where(&User{ID: foundedUser.ID}).Updates(User{Password: user.Password})
+	db.Model(&foundedUser).Where(&models.User{ID: foundedUser.ID}).Updates(models.User{Password: user.Password})
 
 	// Configure the email message
 	htmlBody := fmt.Sprintf("<p>Your password successfully changed.</p>")
@@ -268,7 +244,7 @@ func ChangePassword(ctx iris.Context) {
 
 // CheckPassword method
 func CheckPassword(ctx iris.Context) {
-	var user User
+	var user models.User
 
 	err := ctx.ReadJSON(&user)
 	if err != nil && (user.Password == "") {
@@ -277,21 +253,48 @@ func CheckPassword(ctx iris.Context) {
 		return
 	}
 
-	db, dbErr := gorm.Open("mysql", mysqlDbURI)
-
-	if dbErr != nil {
-		fmt.Println(dbErr.Error())
-		panic("Failed to connect to database")
-	}
+	db := db.Connect()
 	defer db.Close()
 
-	var foundedUser User
-	db.Where(&User{ID: user.ID}).First(&foundedUser)
+	var foundedUser models.User
+	db.Where(&models.User{ID: user.ID}).First(&foundedUser)
 
-	if foundedUser.Password != user.Password {
+	passMatch := IsPasswordMatch(user.Password, foundedUser.Password)
+
+	if !passMatch {
 		ctx.StatusCode(iris.StatusNotFound)
 		ctx.JSON(iris.Map{"message": "Invalid current Password."})
 		return
 	}
 	ctx.StatusCode(iris.StatusOK)
+}
+
+// SendInvitation method
+func SendInvitation(ctx iris.Context) {
+	email := ctx.URLParam("email")
+	inviter := ctx.URLParam("inviter")
+
+	if email == "" {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.JSON(iris.Map{"msg": "Email must be provided"})
+		return
+	}
+
+	appLink := "https://planner-2.herokuapp.com"
+
+	// Configure the email message
+	htmlBody := fmt.Sprintf("<p>Hey there, %s invited you to an Personal Planner web application. Try it now by this link %s</p>",
+		inviter, appLink)
+	m := gomail.NewMessage()
+	m.SetHeader("From", mailSender)
+	m.SetHeader("To", email)
+	m.SetHeader("Subject", "Invitation to app")
+	m.SetBody("text/html", htmlBody)
+
+	d := gomail.NewDialer(mailHost, mailPort, mailUser, mailPassword)
+
+	// Send the email
+	if err := d.DialAndSend(m); err != nil {
+		panic(err)
+	}
 }
