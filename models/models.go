@@ -31,6 +31,15 @@ type GroupParticipants struct {
 	GroupID uint64 `json:"groupId"`
 }
 
+// JoinedGroupParticipants model
+type JoinedGroupParticipants struct {
+	ID        uint64 `gorm:"primary_key" json:"id"`
+	UserID    uint64 `json:"userId"`
+	GroupID   uint64 `json:"groupId"`
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
+}
+
 // UserSubmit model
 type UserSubmit struct {
 	Email    string `gorm:"unique_index" json:"email"`

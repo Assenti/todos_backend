@@ -61,5 +61,6 @@ func InitRoutes(app *iris.Application) {
 		api.Delete("/group", controllers.DeleteGroup)
 		api.Get("/participants", controllers.GetGroupParticipants)
 		api.Get("/addParticipant", controllers.AddParticipant)
+		api.Get("/groupsParticipate", controllers.GetGroupsWhereParticipate)
 	}
 }

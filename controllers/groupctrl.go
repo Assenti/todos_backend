@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/Assenti/restapi/db"
 	"github.com/Assenti/restapi/models"
@@ -79,13 +81,22 @@ func DeleteGroup(ctx iris.Context) {
 
 // GetGroupParticipants method
 func GetGroupParticipants(ctx iris.Context) {
-	var participants []models.GroupParticipants
+	var participants []models.JoinedGroupParticipants
 	groupID := ctx.URLParam("groupid")
 
 	db := db.Connect()
 	defer db.Close()
 
-	db.Where("group_id = ?", groupID).Find(&participants)
+	db.Table("group_participants").Raw(`SELECT 
+		group_participants.id, 
+		group_participants.user_id, 
+		group_participants.group_id, 
+		users.firstname, 
+		users.lastname
+		FROM group_participants
+		LEFT JOIN users ON users.id = group_participants.user_id
+		WHERE group_id = ?`, groupID).Scan(&participants)
+
 	ctx.JSON(iris.Map{"participants": participants})
 }
 
@@ -105,4 +116,37 @@ func AddParticipant(ctx iris.Context) {
 	db.Create(&models.GroupParticipants{GroupID: intGroupID, UserID: intUserID})
 	db.Where("group_id = ?", intGroupID).Find(&participants)
 	ctx.JSON(iris.Map{"participants": participants})
+}
+
+// GetGroupsWhereParticipate method
+func GetGroupsWhereParticipate(ctx iris.Context) {
+	var groups []models.Group
+	userID := ctx.URLParam("userid")
+
+	db := db.Connect()
+	defer db.Close()
+
+	var groupParticipants []models.GroupParticipants
+	db.Where("user_id = ?", userID).Find(&groupParticipants)
+
+	var groupIDs []uint64
+
+	for _, p := range groupParticipants {
+		groupIDs = append(groupIDs, p.GroupID)
+	}
+
+	var IDsInString []string
+
+	for _, ID := range groupIDs {
+		IDsInString = append(IDsInString, strconv.FormatUint(ID, 10))
+	}
+
+	uniqueIDsInString := Unique(IDsInString)
+	stringifiedIDs := strings.Join(uniqueIDsInString, ",")
+
+	query := fmt.Sprintf("SELECT * FROM PgQXfyC4AD.groups WHERE id IN (%s)", stringifiedIDs)
+
+	db.Table("groups").Raw(query).Scan(&groups)
+
+	ctx.JSON(iris.Map{"groups": groups})
 }
