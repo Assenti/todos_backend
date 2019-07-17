@@ -150,3 +150,33 @@ func GetGroupsWhereParticipate(ctx iris.Context) {
 
 	ctx.JSON(iris.Map{"groups": groups})
 }
+
+// GetGroupsTodos method
+func GetGroupsTodos(ctx iris.Context) {
+	var todos []models.JoinedTodo
+
+	id := ctx.URLParam("groupId")
+
+	db := db.Connect()
+	defer db.Close()
+
+	db.Table("users").Raw(`SELECT 
+				todos.id, 
+				todos.value, 
+				todos.created_at, 
+				todos.updated_at, 
+				todos.important, 
+				todos.completed, 
+				todos.user_id, 
+				todos.complete_date, 
+				todos.status, 
+				todos.group_id, 
+				todos.performer, 
+				users.firstname, 
+				users.lastname
+				FROM todos
+				LEFT JOIN users ON todos.performer = users.id
+				where group_id = ?`, id).Scan(&todos)
+
+	ctx.JSON(iris.Map{"todos": todos})
+}

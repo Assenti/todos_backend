@@ -59,6 +59,7 @@ func InitRoutes(app *iris.Application) {
 		api.Post("/group", controllers.CreateGroup)
 		api.Put("/group", controllers.ChangeGroupName)
 		api.Delete("/group", controllers.DeleteGroup)
+		api.Get("/grouptodos", controllers.GetGroupsTodos)
 		api.Get("/participants", controllers.GetGroupParticipants)
 		api.Get("/addParticipant", controllers.AddParticipant)
 		api.Get("/groupsParticipate", controllers.GetGroupsWhereParticipate)

@@ -80,7 +80,11 @@ func CreateTodo(ctx iris.Context) {
 	db := db.Connect()
 	defer db.Close()
 
-	db.Create(&models.Todo{Value: todo.Value, UserID: todo.UserID})
+	if todo.GroupID != 999999999 {
+		db.Create(&models.Todo{Value: todo.Value, GroupID: todo.GroupID})
+	} else {
+		db.Create(&models.Todo{Value: todo.Value, UserID: todo.UserID})
+	}
 
 	var newTodo models.Todo
 	db.Where("user_id = ?", todo.UserID).Last(&newTodo)
