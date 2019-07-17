@@ -45,3 +45,14 @@ func IsPasswordMatch(nativePassword string, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(nativePassword))
 	return err == nil
 }
+
+// CompletionHandler function
+func CompletionHandler(completionCode int8) string {
+	if completionCode == 0 {
+		return "In progress"
+	} else if completionCode == 1 {
+		return "Completed"
+	} else {
+		return ""
+	}
+}

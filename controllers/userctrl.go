@@ -42,9 +42,14 @@ func CreateUser(ctx iris.Context) {
 	db.Create(&models.User{Firstname: user.Firstname, Lastname: user.Lastname, Email: user.Email, Password: hash})
 
 	// Configure the email message
-	htmlBody := fmt.Sprintf("<h4>Hello, %s %s, you are successfully registered on Personal Planner web app.</h4>", user.Firstname, user.Lastname)
+	htmlBody := fmt.Sprintf(`
+		<h1>Personal Planner</h1>
+		<p style="font-size: 16px">Hello, %s %s, you are successfully registered on Personal Planner web app.</p>
+		<hr>
+		<p style="font-size: 11px">Do not reply to this message, it was generated automatically.</p>`,
+		user.Firstname, user.Lastname)
 	m := gomail.NewMessage()
-	m.SetHeader("From", mailUser)
+	m.SetHeader("From", mailSender)
 	m.SetHeader("To", user.Email)
 	m.SetHeader("Subject", "Registration confirmation")
 	m.SetBody("text/html", htmlBody)
@@ -140,6 +145,9 @@ func Login(ctx iris.Context) {
 			ctx.StatusCode(iris.StatusInternalServerError)
 		}
 
+		temp := time.Now()
+		db.Model(&foundedUser).Where("email = ?", foundedUser.Email).Update("last_logged_on", temp)
+
 		var userInfo models.UserInfo
 		userInfo.CreatedAt = foundedUser.CreatedAt
 		userInfo.Email = foundedUser.Email
@@ -147,14 +155,34 @@ func Login(ctx iris.Context) {
 		userInfo.ID = foundedUser.ID
 		userInfo.Lastname = foundedUser.Lastname
 		userInfo.Token = tokenString
+		userInfo.LastLoggedOn = temp
 
 		userInfoInString, err := json.Marshal(&userInfo)
 		if err != nil {
 			panic(err)
 		}
 		encodedUserInfo := base64.StdEncoding.EncodeToString(userInfoInString)
+
 		ctx.JSON(iris.Map{"user": encodedUserInfo})
 	} else {
+		// In case of wrong password send alerting email to account owner
+		m := gomail.NewMessage()
+		m.SetHeader("From", mailSender)
+		m.SetHeader("To", foundedUser.Email)
+		m.SetHeader("Subject", "Notification from Personal Planner app")
+		m.SetBody("text/html", `
+			<h1>Personal Planner</h1>
+			<p style="font-size: 16px">Warning! Someone try to sign in to app using your account.</p>
+			<hr>
+			<p style="font-size: 11px">Do not reply to this message, it was generated automatically.</p>`)
+
+		d := gomail.NewDialer(mailHost, mailPort, mailUser, mailPassword)
+
+		// Send the email
+		if err := d.DialAndSend(m); err != nil {
+			panic(err)
+		}
+
 		ctx.StatusCode(iris.StatusBadRequest)
 		ctx.JSON(iris.Map{"msg": "Invalid Email or Password."})
 	}
@@ -190,9 +218,13 @@ func RestorePassword(ctx iris.Context) {
 	db.Model(&foundedUser).Where(&models.User{ID: foundedUser.ID}).Updates(models.User{Password: res})
 
 	// Configure the email message
-	htmlBody := fmt.Sprintf("<h4>You sent password restoring request. Generated new password: %s. Change it from your cabinet in app.</h4>", res)
+	htmlBody := fmt.Sprintf(`
+		<h1>Personal Planner</h1>
+		<p style="font-size: 16px">You sent password restoring request. Generated new password: %s. Change it from your cabinet in app.</p>
+		<hr>
+		<p style="font-size: 11px">Do not reply to this message, it was generated automatically.</p>`, res)
 	m := gomail.NewMessage()
-	m.SetHeader("From", mailUser)
+	m.SetHeader("From", mailSender)
 	m.SetHeader("To", email)
 	m.SetHeader("Subject", "Password Restore")
 	m.SetBody("text/html", htmlBody)
@@ -226,9 +258,13 @@ func ChangePassword(ctx iris.Context) {
 	db.Model(&foundedUser).Where(&models.User{ID: foundedUser.ID}).Updates(models.User{Password: user.Password})
 
 	// Configure the email message
-	htmlBody := fmt.Sprintf("<p>Your password successfully changed.</p>")
+	htmlBody := fmt.Sprintf(`
+		<h1>Personal Planner</h1>
+		<p style="font-size: 16px">Your password successfully changed.</p>
+		<hr>
+		<p style="font-size: 11px">Do not reply to this message, it was generated automatically.</p>`)
 	m := gomail.NewMessage()
-	m.SetHeader("From", mailUser)
+	m.SetHeader("From", mailSender)
 	m.SetHeader("To", user.Email)
 	m.SetHeader("Subject", "Password Change")
 	m.SetBody("text/html", htmlBody)
@@ -283,7 +319,11 @@ func SendInvitation(ctx iris.Context) {
 	appLink := "https://planner-2.herokuapp.com"
 
 	// Configure the email message
-	htmlBody := fmt.Sprintf("<p>Hey there, %s invited you to an Personal Planner web application. Try it now by this link %s</p>",
+	htmlBody := fmt.Sprintf(`
+		<h1>Personal Planner</h1>
+		<p style="font-size: 16px">Hey there, %s invited you to the Personal Planner web application. Try it now, follow this link %s</p>
+		<hr>
+		<p style="font-size: 11px">Do not reply to this message, it was generated automatically.</p>`,
 		inviter, appLink)
 	m := gomail.NewMessage()
 	m.SetHeader("From", mailSender)

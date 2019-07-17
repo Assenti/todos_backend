@@ -8,12 +8,13 @@ import (
 
 // User model
 type User struct {
-	ID        uint64    `gorm:"primary_key" json:"id"`
-	CreatedAt time.Time `gorm:"default: CURRENT_TIMESTAMP" json:"createdAt"`
-	Firstname string    `gorm:"type:varchar(100)" json:"firstname"`
-	Lastname  string    `gorm:"type:varchar(100)" json:"lastname"`
-	Email     string    `gorm:"unique_index" json:"email"`
-	Password  string    `gorm:"type:varchar(100)" json:"password"`
+	ID           uint64    `gorm:"primary_key" json:"id"`
+	CreatedAt    time.Time `gorm:"default: CURRENT_TIMESTAMP" json:"createdAt"`
+	Firstname    string    `gorm:"type:varchar(100)" json:"firstname"`
+	Lastname     string    `gorm:"type:varchar(100)" json:"lastname"`
+	Email        string    `gorm:"unique_index" json:"email"`
+	Password     string    `gorm:"type:varchar(100)" json:"password"`
+	LastLoggedOn time.Time `gorm:"type: TIMESTAMP" json:"lastLoggedOn"`
 }
 
 // Group model
@@ -49,12 +50,13 @@ type UserSubmit struct {
 
 // UserInfo model to pass to frontend
 type UserInfo struct {
-	ID        uint64    `gorm:"primary_key" json:"id"`
-	CreatedAt time.Time `gorm:"default: CURRENT_TIMESTAMP" json:"createdAt"`
-	Firstname string    `gorm:"type:varchar(100)" json:"firstname"`
-	Lastname  string    `gorm:"type:varchar(100)" json:"lastname"`
-	Email     string    `gorm:"unique_index" json:"email"`
-	Token     string    `json:"token"`
+	ID           uint64    `gorm:"primary_key" json:"id"`
+	CreatedAt    time.Time `gorm:"default: CURRENT_TIMESTAMP" json:"createdAt"`
+	Firstname    string    `gorm:"type:varchar(100)" json:"firstname"`
+	Lastname     string    `gorm:"type:varchar(100)" json:"lastname"`
+	Email        string    `gorm:"unique_index" json:"email"`
+	Token        string    `json:"token"`
+	LastLoggedOn time.Time `gorm:"type: TIMESTAMP" json:"lastLoggedOn"`
 }
 
 // Todo model

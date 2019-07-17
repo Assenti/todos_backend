@@ -181,20 +181,20 @@ func SendTodosListViaEmail(ctx iris.Context) {
 	}
 
 	var todosHTML string
-	htmlBody := "<h4>Your todos list:</h4>"
-	footer := "<hr><p style='font-size: 11px'>Message was generated automatically. Please don't reply.</p>"
+	htmlBody := `
+		<h1>Personal Planner</h1>
+		<div style="font-size: 16px; font-weight: bold">Your todos list:</div>`
+	footer := `<hr><p style="font-size: 11px">Do not reply to this message, it was generated automatically.</p>`
 
 	for i, todo := range todos {
 		index := i + 1
-		todosHTML += fmt.Sprintf("<div>%d) %s;</div>", index, todo.Value)
+		todosHTML += fmt.Sprintf(`<div style="font-size: 14px">%d) %s (status: %s);</div>`, index, todo.Value, CompletionHandler(todo.Completed))
 	}
-
-	fmt.Println(todosHTML)
 
 	htmlBody = htmlBody + todosHTML + footer
 
 	m := gomail.NewMessage()
-	m.SetHeader("From", mailUser)
+	m.SetHeader("From", mailSender)
 	m.SetHeader("To", email)
 	m.SetHeader("Subject", "Todos List")
 	m.SetBody("text/html", htmlBody)
