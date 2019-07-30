@@ -14,7 +14,7 @@ type User struct {
 	Lastname     string    `gorm:"type:varchar(100)" json:"lastname"`
 	Email        string    `gorm:"unique_index" json:"email"`
 	Password     string    `gorm:"type:varchar(100)" json:"password"`
-	LastLoggedOn time.Time `gorm:"type: TIMESTAMP" json:"lastLoggedOn"`
+	LastLoggedOn time.Time `gorm:"type: TIMESTAMP;default: CURRENT_TIMESTAMP" json:"lastLoggedOn"`
 }
 
 // Group model

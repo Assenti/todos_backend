@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/Assenti/restapi/db"
@@ -39,7 +40,26 @@ func CreateUser(ctx iris.Context) {
 
 	hash, _ := HashPassword(user.Password)
 
-	db.Create(&models.User{Firstname: user.Firstname, Lastname: user.Lastname, Email: user.Email, Password: hash})
+	errors := db.Create(&models.User{
+		Firstname: user.Firstname,
+		Lastname:  user.Lastname,
+		Email:     user.Email,
+		Password:  hash}).GetErrors()
+
+	if len(errors) > 0 {
+		var existErr string
+		for _, err := range errors {
+			existErr = err.Error()
+		}
+		if strings.Contains(existErr, "Duplicate entry") {
+			ctx.StatusCode(iris.StatusBadRequest)
+			ctx.JSON(iris.Map{"msg": "Such Email is registered yet"})
+			return
+		}
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.JSON(iris.Map{"msg": existErr})
+		return
+	}
 
 	// Configure the email message
 	htmlBody := fmt.Sprintf(`
