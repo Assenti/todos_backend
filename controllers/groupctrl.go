@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -144,9 +143,16 @@ func GetGroupsWhereParticipate(ctx iris.Context) {
 	uniqueIDsInString := Unique(IDsInString)
 	stringifiedIDs := strings.Join(uniqueIDsInString, ",")
 
-	query := fmt.Sprintf("SELECT * FROM PgQXfyC4AD.groups WHERE id IN (%s)", stringifiedIDs)
+	errors := db.Table("groups").Raw(
+		"SELECT * FROM PgQXfyC4AD.groups WHERE id IN (?)", stringifiedIDs).Scan(&groups).GetErrors()
 
-	db.Table("groups").Raw(query).Scan(&groups)
+	var existErr string
+	for _, err := range errors {
+		existErr = err.Error()
+		if existErr != "" {
+			ctx.StatusCode(iris.StatusInternalServerError)
+		}
+	}
 
 	ctx.JSON(iris.Map{"groups": groups})
 }
